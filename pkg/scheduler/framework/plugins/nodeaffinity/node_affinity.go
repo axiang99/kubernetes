@@ -84,7 +84,7 @@ func (s *preFilterState) Clone() framework.StateData {
 // EventsToRegister returns the possible events that may make a Pod
 // failed by this plugin schedulable.
 func (pl *NodeAffinity) EventsToRegister() []framework.ClusterEventWithHint {
-  print("GWX: EventsToRegister - node add/update Fn: pl.isSchedulableAfterNodeChange")
+  print("GWX: EventsToRegister - node add/update Fn: pl.isSchedulableAfterNodeChange  ")
 	return []framework.ClusterEventWithHint{
 		{Event: framework.ClusterEvent{Resource: framework.Node, ActionType: framework.Add | framework.Update}, QueueingHintFn: pl.isSchedulableAfterNodeChange},
 	}
@@ -93,7 +93,7 @@ func (pl *NodeAffinity) EventsToRegister() []framework.ClusterEventWithHint {
 // isSchedulableAfterNodeChange is invoked whenever a node changed. It checks whether
 // that change made a previously unschedulable pod schedulable.
 func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1.Pod, oldObj, newObj interface{}) (framework.QueueingHint, error) {
-  logger.V(4).Info("GWX: in isSchedulableAfterNodeChange")
+  logger.V(4).Info("GWX: entering isSchedulableAfterNodeChange.")
 	_, modifiedNode, err := util.As[*v1.Node](oldObj, newObj)
 	if err != nil {
     logger.V(4).Info("GWX: Return framework.Queue,err")
@@ -108,7 +108,7 @@ func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1
 	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod)
 	isMatched, err := requiredNodeAffinity.Match(modifiedNode)
 	if err != nil {
-    logger.V(4).Info("GWX: in isSchedulableAfterNodeChange" , "Return framework.Queue,err]")
+    logger.V(4).Info("GWX: in isSchedulableAfterNodeChang. Return framework.Queue,err]")
 
 		return framework.Queue, err
 	}
