@@ -369,6 +369,7 @@ func New(ctx context.Context,
 // defaultQueueingHintFn is the default queueing hint function.
 // It always returns Queue as the queueing hint.
 var defaultQueueingHintFn = func(_ klog.Logger, _ *v1.Pod, _, _ interface{}) (framework.QueueingHint, error) {
+  print("GWX: defaultQueueingHintFn - return framework.Queue")
 	return framework.Queue, nil
 }
 

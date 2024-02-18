@@ -790,6 +790,7 @@ func (p *PriorityQueue) AddUnschedulableIfNotPresent(logger klog.Logger, pInfo *
 	}
 
 	// We check whether this Pod may change its scheduling result by any of events that happened during scheduling.
+  logger.V(3).Info("GWX: calling determineSchedulingHintForInFlightPod")
 	schedulingHint := p.determineSchedulingHintForInFlightPod(logger, pInfo)
 
 	// In this case, we try to requeue this Pod to activeQ/backoffQ.
