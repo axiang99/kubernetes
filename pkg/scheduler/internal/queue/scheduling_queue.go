@@ -442,14 +442,19 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 	queueStrategy := queueSkip
 	for eventToMatch, hintfns := range hintMap {
 		if !eventToMatch.Match(event) {
+      logger.V(3).Info("GWX: event Not Match", "eventToMatch",eventToMatch)
+
 			continue
 		}
 
 		for _, hintfn := range hintfns {
 			if !rejectorPlugins.Has(hintfn.PluginName) {
 				// skip if it's not hintfn from rejectorPlugins.
+        logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins")
 				continue
 			}
+
+      logger.V(3).Info("GWX: calling hintfn.QueueingHintFn")
 
 			hint, err := hintfn.QueueingHintFn(logger, pod, oldObj, newObj)
 			if err != nil {
@@ -457,9 +462,9 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 				// the Pod from being stuck in the unschedulable pod pool.
 				oldObjMeta, newObjMeta, asErr := util.As[klog.KMetadata](oldObj, newObj)
 				if asErr != nil {
-					logger.Error(err, "QueueingHintFn returns error", "event", event, "plugin", hintfn.PluginName, "pod", klog.KObj(pod))
+					logger.Error(err, "GWX: QueueingHintFn returns error", "event", event, "plugin", hintfn.PluginName, "pod", klog.KObj(pod))
 				} else {
-					logger.Error(err, "QueueingHintFn returns error", "event", event, "plugin", hintfn.PluginName, "pod", klog.KObj(pod), "oldObj", klog.KObj(oldObjMeta), "newObj", klog.KObj(newObjMeta))
+					logger.Error(err, "GWX: QueueingHintFn returns error", "event", event, "plugin", hintfn.PluginName, "pod", klog.KObj(pod), "oldObj", klog.KObj(oldObjMeta), "newObj", klog.KObj(newObjMeta))
 				}
 				hint = framework.Queue
 			}
@@ -470,6 +475,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Has(hintfn.PluginName) {
 				// interprets Queue from the Pending plugin as queueImmediately.
 				// We can return immediately because queueImmediately is the highest priority.
+        logger.V(3).Info("GWX: return queueImmediately")
 				return queueImmediately
 			}
 
@@ -478,6 +484,8 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Len() == 0 {
 				// We can return immediately because no Pending plugins, which only can make queueImmediately, registered in this Pod,
 				// and queueAfterBackoff is the second highest priority.
+        logger.V(3).Info("GWX: return queueAfterBackoff")
+
 				return queueAfterBackoff
 			}
 
@@ -1144,6 +1152,7 @@ func (p *PriorityQueue) requeuePodViaQueueingHint(logger klog.Logger, pInfo *fra
 func (p *PriorityQueue) movePodsToActiveOrBackoffQueue(logger klog.Logger, podInfoList []*framework.QueuedPodInfo, event framework.ClusterEvent, oldObj, newObj interface{}) {
 	activated := false
 	for _, pInfo := range podInfoList {
+    logger.V(3).Info("GWX: calling p.isPodWorthRequeuing", "pod", klog.KObj(pInfo.Pod))
 		schedulingHint := p.isPodWorthRequeuing(logger, pInfo, event, oldObj, newObj)
 		if schedulingHint == queueSkip {
 			// QueueingHintFn determined that this Pod isn't worth putting to activeQ or backoffQ by this event.

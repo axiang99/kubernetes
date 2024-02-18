@@ -84,7 +84,7 @@ func (s *preFilterState) Clone() framework.StateData {
 // EventsToRegister returns the possible events that may make a Pod
 // failed by this plugin schedulable.
 func (pl *NodeAffinity) EventsToRegister() []framework.ClusterEventWithHint {
-  print("GWX: EventsToRegister - node add/update  pl.isSchedulableAfterNodeChange")
+  print("GWX: EventsToRegister - node add/update Fn: pl.isSchedulableAfterNodeChange")
 	return []framework.ClusterEventWithHint{
 		{Event: framework.ClusterEvent{Resource: framework.Node, ActionType: framework.Add | framework.Update}, QueueingHintFn: pl.isSchedulableAfterNodeChange},
 	}
@@ -93,34 +93,34 @@ func (pl *NodeAffinity) EventsToRegister() []framework.ClusterEventWithHint {
 // isSchedulableAfterNodeChange is invoked whenever a node changed. It checks whether
 // that change made a previously unschedulable pod schedulable.
 func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1.Pod, oldObj, newObj interface{}) (framework.QueueingHint, error) {
-  logger.V(4).Info("GWX")
+  logger.V(4).Info("GWX: in isSchedulableAfterNodeChange")
 	_, modifiedNode, err := util.As[*v1.Node](oldObj, newObj)
 	if err != nil {
-    logger.V(4).Info("GWX", "In isSchedulableAfterNodeChange" , "Return framework.Queue,err]")
+    logger.V(4).Info("GWX: Return framework.Queue,err")
 		return framework.Queue, err
 	}
 
 	if pl.addedNodeSelector != nil && !pl.addedNodeSelector.Match(modifiedNode) {
-		logger.V(4).Info("GWX", "added or modified node didn't match scheduler-enforced node affinity and this event won't make the Pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+		logger.V(4).Info("GWX: added or modified node didn't match scheduler-enforced node affinity and this event won't make the Pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.QueueSkip, nil
 	}
 
 	requiredNodeAffinity := nodeaffinity.GetRequiredNodeAffinity(pod)
 	isMatched, err := requiredNodeAffinity.Match(modifiedNode)
 	if err != nil {
-    logger.V(4).Info("GWX", "In isSchedulableAfterNodeChange" , "Return framework.Queue,err]")
+    logger.V(4).Info("GWX: in isSchedulableAfterNodeChange" , "Return framework.Queue,err]")
 
 		return framework.Queue, err
 	}
 	if isMatched {
-		logger.V(4).Info("GWX", "node was created or updated, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode), "Return framework.Queue")
+		logger.V(4).Info("GWX: isMatched=true. node was created or updated, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode), "Return framework.Queue")
 		return framework.Queue, nil
 	}
 
 	// TODO: also check if the original node meets the pod's requestments once preCheck is completely removed.
 	// See: https://github.com/kubernetes/kubernetes/issues/110175
 
-	logger.V(4).Info("GWX", "node was created or updated, but it doesn't make this pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode),"Return framework.QueueSkip")
+	logger.V(4).Info("GWX: node was created or updated, but it doesn't make this pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode),"Return framework.QueueSkip")
 	return framework.QueueSkip, nil
 }
 
@@ -307,6 +307,8 @@ func New(_ context.Context, plArgs runtime.Object, h framework.Handle) (framewor
 			}
 		}
 	}
+  print("GWX: new a NodeAffinity plugin.")
+
 	return pl, nil
 }
 
