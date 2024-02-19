@@ -113,14 +113,14 @@ func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1
 		return framework.Queue, err
 	}
 	if isMatched {
-		logger.V(4).Info("GWX: isMatched=true. node was created or updated, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode), "Return framework.Queue")
+		logger.V(4).Info("GWX: isMatched=true,Return framework.Queue. node was created or updated, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.Queue, nil
 	}
 
 	// TODO: also check if the original node meets the pod's requestments once preCheck is completely removed.
 	// See: https://github.com/kubernetes/kubernetes/issues/110175
 
-	logger.V(4).Info("GWX: isMatched=false. node was created or updated, but it doesn't make this pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode),"Return framework.QueueSkip")
+	logger.V(4).Info("GWX: isMatched=false,Return framework.Skip. node was created or updated, but it doesn't make this pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 	return framework.QueueSkip, nil
 }
 

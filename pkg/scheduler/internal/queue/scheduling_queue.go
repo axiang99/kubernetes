@@ -420,21 +420,21 @@ const (
 func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework.QueuedPodInfo, event framework.ClusterEvent, oldObj, newObj interface{}) queueingStrategy {
 	rejectorPlugins := pInfo.UnschedulablePlugins.Union(pInfo.PendingPlugins)
 	if rejectorPlugins.Len() == 0 {
-		logger.V(6).Info("Worth requeuing because no failed plugins", "pod", klog.KObj(pInfo.Pod))
+		logger.V(6).Info("GWX: Worth requeuing because no failed plugins", "pod", klog.KObj(pInfo.Pod))
 		return queueAfterBackoff
 	}
 
 	if event.IsWildCard() {
 		// If the wildcard event is special one as someone wants to force all Pods to move to activeQ/backoffQ.
 		// We return queueAfterBackoff in this case, while resetting all blocked plugins.
-		logger.V(6).Info("Worth requeuing because the event is wildcard", "pod", klog.KObj(pInfo.Pod))
+		logger.V(6).Info("GWX: Worth requeuing because the event is wildcard", "pod", klog.KObj(pInfo.Pod))
 		return queueAfterBackoff
 	}
 
 	hintMap, ok := p.queueingHintMap[pInfo.Pod.Spec.SchedulerName]
 	if !ok {
 		// shouldn't reach here unless bug.
-		logger.Error(nil, "No QueueingHintMap is registered for this profile", "profile", pInfo.Pod.Spec.SchedulerName, "pod", klog.KObj(pInfo.Pod))
+		logger.Error(nil, "GWX: No QueueingHintMap is registered for this profile", "profile", pInfo.Pod.Spec.SchedulerName, "pod", klog.KObj(pInfo.Pod))
 		return queueAfterBackoff
 	}
 
@@ -443,18 +443,17 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 	for eventToMatch, hintfns := range hintMap {
 		if !eventToMatch.Match(event) {
       logger.V(3).Info("GWX: event Not Match", "eventToMatch",eventToMatch)
-
 			continue
 		}
 
 		for _, hintfn := range hintfns {
 			if !rejectorPlugins.Has(hintfn.PluginName) {
 				// skip if it's not hintfn from rejectorPlugins.
-        logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins")
+        logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins","hintfn.PluginName",hintfn.PluginName,"rejectorPlugins",rejectorPlugins)
 				continue
 			}
 
-      logger.V(3).Info("GWX: calling hintfn.QueueingHintFn")
+      logger.V(3).Info("GWX: calling hintfn.QueueingHintFn for ", "pod", pod)
 
 			hint, err := hintfn.QueueingHintFn(logger, pod, oldObj, newObj)
 			if err != nil {
