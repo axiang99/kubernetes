@@ -6,25 +6,26 @@ echo -e "\nRedeploy kube-scheduler..."
 mv /etc/kubernetes/manifests/kube-scheduler.yaml /tmp
 
 #make sure the new built image will be used
-while [[ $(crictl ps | grep scheduler) ]]; do
-    echo "Scheduler is still running"
+echo -n "Waiting for Scheduler to stop..."
+while [[ $(kubectl get pod  -n kube-system | grep sche) ]]; do
     sleep 2
+    echo -n "."
 done
 
 crictl rmi docker.io/axiang99/kube-scheduler:$image
 
 #restore
 cp /tmp/kube-scheduler.yaml  /etc/kubernetes/manifests/
-echo "Wait for scheduler pod to run..."
+echo -n "Waiting for Scheduler to run..."
 
 count=0
-while [[ $count -lt 4 ]]; do
+while [[ $count -lt 6 ]]; do
     result=`crictl ps | grep scheduler`
     if [[ -n "$result" ]]; then
-        echo "Scheduler is running"
+        echo -e "\nScheduler is running."
         break
     else
-        echo "Scheduler is not running, waiting..."
+        echo -n "."
         sleep 5
         ((count++))
     fi
