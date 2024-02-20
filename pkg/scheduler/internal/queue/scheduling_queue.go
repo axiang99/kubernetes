@@ -442,18 +442,18 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 	queueStrategy := queueSkip
 	for eventToMatch, hintfns := range hintMap {
 		if !eventToMatch.Match(event) {
-      logger.V(3).Info("GWX: event Not Match", "eventToMatch",eventToMatch)
+      //logger.V(3).Info("GWX: event Not Match", "eventToMatch",eventToMatch)
 			continue
 		}
 
 		for _, hintfn := range hintfns {
 			if !rejectorPlugins.Has(hintfn.PluginName) {
 				// skip if it's not hintfn from rejectorPlugins.
-        logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins","hintfn.PluginName",hintfn.PluginName,"rejectorPlugins",rejectorPlugins)
+        //logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins","hintfn.PluginName",hintfn.PluginName,"rejectorPlugins",rejectorPlugins)
 				continue
 			}
 
-      logger.V(3).Info("GWX: calling hintfn.QueueingHintFn for ", "pod", pod)
+      logger.V(3).Info("GWX: calling hintfn.QueueingHintFn for ", "pod", klog.KObj(pInfo.Pod), "PluginName", hintfn.PluginName, "Event", event)
 
 			hint, err := hintfn.QueueingHintFn(logger, pod, oldObj, newObj)
 			if err != nil {
@@ -474,7 +474,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Has(hintfn.PluginName) {
 				// interprets Queue from the Pending plugin as queueImmediately.
 				// We can return immediately because queueImmediately is the highest priority.
-        logger.V(3).Info("GWX: return queueImmediately")
+        logger.V(3).Info("GWX: PendingPlugins has this plugin, return queueImmediately", "hint", hint)
 				return queueImmediately
 			}
 
@@ -483,7 +483,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Len() == 0 {
 				// We can return immediately because no Pending plugins, which only can make queueImmediately, registered in this Pod,
 				// and queueAfterBackoff is the second highest priority.
-        logger.V(3).Info("GWX: return queueAfterBackoff")
+        logger.V(3).Info("GWX: PendingPlugins.Len=0, return queueAfterBackoff","hint", hint)
 
 				return queueAfterBackoff
 			}
