@@ -442,14 +442,14 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 	queueStrategy := queueSkip
 	for eventToMatch, hintfns := range hintMap {
 		if !eventToMatch.Match(event) {
-      //logger.V(3).Info("GWX: event Not Match", "eventToMatch",eventToMatch)
+      logger.V(6).Info("GWX: event Not Match", "event",event, "eventToMatch",eventToMatch)
 			continue
 		}
 
 		for _, hintfn := range hintfns {
 			if !rejectorPlugins.Has(hintfn.PluginName) {
 				// skip if it's not hintfn from rejectorPlugins.
-        //logger.V(3).Info("GWX: skip - not hintfn from rejectorPlugins","hintfn.PluginName",hintfn.PluginName,"rejectorPlugins",rejectorPlugins)
+        logger.V(6).Info("GWX: skip - not hintfn from rejectorPlugins","hintfn.PluginName",hintfn.PluginName,"rejectorPlugins",rejectorPlugins)
 				continue
 			}
 
@@ -483,7 +483,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Len() == 0 {
 				// We can return immediately because no Pending plugins, which only can make queueImmediately, registered in this Pod,
 				// and queueAfterBackoff is the second highest priority.
-        logger.V(3).Info("GWX: PendingPlugins.Len=0, return queueAfterBackoff","hint", hint)
+        logger.V(3).Info("GWX: PendingPlugins.Len=0, return queueAfterBackoff","interprets Queue from the unschedulable plugin as queueAfterBackoff. hint", hint)
 
 				return queueAfterBackoff
 			}
@@ -849,6 +849,7 @@ func (p *PriorityQueue) flushBackoffQCompleted(logger klog.Logger) {
 func (p *PriorityQueue) flushUnschedulablePodsLeftover(logger klog.Logger) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+  logger.V(5).Info("GWX: entering flushUnschedulablePodsLeftover")
 
 	var podsToMove []*framework.QueuedPodInfo
 	currentTime := p.clock.Now()
@@ -860,6 +861,8 @@ func (p *PriorityQueue) flushUnschedulablePodsLeftover(logger klog.Logger) {
 	}
 
 	if len(podsToMove) > 0 {
+    logger.V(5).Info("GWX: calling p.movePodsToActiveOrBackoffQueue")
+
 		p.movePodsToActiveOrBackoffQueue(logger, podsToMove, UnschedulableTimeout, nil, nil)
 	}
 }
@@ -1109,6 +1112,8 @@ func (p *PriorityQueue) MoveAllToActiveOrBackoffQueue(logger klog.Logger, event 
 //
 // NOTE: this function assumes lock has been acquired in caller
 func (p *PriorityQueue) requeuePodViaQueueingHint(logger klog.Logger, pInfo *framework.QueuedPodInfo, strategy queueingStrategy, event string) string {
+  logger.V(5).Info("GWX: entering requeuePodViaQueueingHint", "strategy",strategy)
+
 	if strategy == queueSkip {
 		p.unschedulablePods.addOrUpdate(pInfo)
 		metrics.SchedulerQueueIncomingPods.WithLabelValues("unschedulable", event).Inc()
@@ -1150,8 +1155,10 @@ func (p *PriorityQueue) requeuePodViaQueueingHint(logger klog.Logger, pInfo *fra
 // NOTE: this function assumes lock has been acquired in caller
 func (p *PriorityQueue) movePodsToActiveOrBackoffQueue(logger klog.Logger, podInfoList []*framework.QueuedPodInfo, event framework.ClusterEvent, oldObj, newObj interface{}) {
 	activated := false
+  logger.V(5).Info("GWX: entering movePodsToActiveOrBackoffQueue")
+
 	for _, pInfo := range podInfoList {
-    logger.V(3).Info("GWX: calling p.isPodWorthRequeuing", "pod", klog.KObj(pInfo.Pod))
+    logger.V(5).Info("GWX: calling isPodWorthRequeuing", "pod", klog.KObj(pInfo.Pod))
 		schedulingHint := p.isPodWorthRequeuing(logger, pInfo, event, oldObj, newObj)
 		if schedulingHint == queueSkip {
 			// QueueingHintFn determined that this Pod isn't worth putting to activeQ or backoffQ by this event.

@@ -1,5 +1,4 @@
 echo "$0  <dest-log-folder>"
-
 if [[ $# -lt 1 ]]; then
     exit 1
 fi
@@ -30,5 +29,7 @@ fi
 
 cp /var/log/pods/kube-system_kube-scheduler-node-10-158-36-43_*/kube-scheduler/*.log  $log_dest/
 ls -l $log_dest
+
+echo 
 
 cd -
