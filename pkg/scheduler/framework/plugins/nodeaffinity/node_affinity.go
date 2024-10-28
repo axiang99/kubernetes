@@ -86,7 +86,7 @@ func (s *preFilterState) Clone() framework.StateData {
 func (pl *NodeAffinity) EventsToRegister() []framework.ClusterEventWithHint {
   print("GWX: EventsToRegister - node add/update Fn: pl.isSchedulableAfterNodeChange  ")
 	return []framework.ClusterEventWithHint{
-		{Event: framework.ClusterEvent{Resource: framework.Node, ActionType: framework.Add | framework.Update}, QueueingHintFn: pl.isSchedulableAfterNodeChange},
+		{Event: framework.ClusterEvent{Resource: framework.Node, ActionType: framework.Add | framework.Update | framework.UpdateNodeLabel}, QueueingHintFn: pl.isSchedulableAfterNodeChange},
 	}
 }
 
