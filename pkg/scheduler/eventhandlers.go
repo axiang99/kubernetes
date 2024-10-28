@@ -76,7 +76,7 @@ func (sched *Scheduler) updateNodeInCache(oldObj, newObj interface{}) {
 		return
 	}
 
-	logger.V(4).Info("Update event for node", "node", klog.KObj(newNode))
+	logger.V(4).Info("GWX: updateNodeInCache: Update event for node", "node", klog.KObj(newNode))
 	nodeInfo := sched.Cache.UpdateNode(logger, oldNode, newNode)
 	events := framework.NodeSchedulingPropertiesChange(newNode, oldNode)
 

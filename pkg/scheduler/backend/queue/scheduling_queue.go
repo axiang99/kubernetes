@@ -405,6 +405,8 @@ func (p *PriorityQueue) isEventOfInterest(logger klog.Logger, event framework.Cl
 // because no plugin changes the scheduling result via the event.
 func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework.QueuedPodInfo, event framework.ClusterEvent, oldObj, newObj interface{}) queueingStrategy {
 	rejectorPlugins := pInfo.UnschedulablePlugins.Union(pInfo.PendingPlugins)
+  logger.V(5).Info("GWX: entering isPodWorthRequeuing for pod ", "pod", klog.KObj(pInfo.Pod), "Event:", event)
+
 	if rejectorPlugins.Len() == 0 {
 		logger.V(6).Info("Worth requeuing because no failed plugins", "pod", klog.KObj(pInfo.Pod))
 		return queueAfterBackoff
@@ -439,6 +441,8 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 
 			start := time.Now()
 			hint, err := hintfn.QueueingHintFn(logger, pod, oldObj, newObj)
+      logger.V(5).Info("GWX:isPodWorthRequeuing - QueueingHintFn returned ", "Plguin", hintfn.PluginName, "hint", hint)
+
 			if err != nil {
 				// If the QueueingHintFn returned an error, we should treat the event as Queue so that we can prevent
 				// the Pod from being stuck in the unschedulable pod pool.
@@ -453,12 +457,14 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			p.metricsRecorder.ObserveQueueingHintDurationAsync(hintfn.PluginName, event.Label(), queueingHintToLabel(hint, err), metrics.SinceInSeconds(start))
 
 			if hint == framework.QueueSkip {
+        logger.V(5).Info("GWX:isPodWorthRequeuing - one plugin return framework.QueueSkip", "Plguin", hintfn.PluginName)
 				continue
 			}
 
 			if pInfo.PendingPlugins.Has(hintfn.PluginName) {
 				// interprets Queue from the Pending plugin as queueImmediately.
 				// We can return immediately because queueImmediately is the highest priority.
+        logger.V(5).Info("GWX:isPodWorthRequeuing - return queueImmediately ")
 				return queueImmediately
 			}
 
@@ -467,6 +473,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			if pInfo.PendingPlugins.Len() == 0 {
 				// We can return immediately because no Pending plugins, which only can make queueImmediately, registered in this Pod,
 				// and queueAfterBackoff is the second highest priority.
+        logger.V(5).Info("GWX:isPodWorthRequeuing - return queueAfterBackoff")
 				return queueAfterBackoff
 			}
 
@@ -475,7 +482,7 @@ func (p *PriorityQueue) isPodWorthRequeuing(logger klog.Logger, pInfo *framework
 			queueStrategy = queueAfterBackoff
 		}
 	}
-
+  logger.V(5).Info("GWX:isPodWorthRequeuing - return ", "queueStrategy", queueStrategy)
 	return queueStrategy
 }
 

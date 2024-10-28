@@ -90,6 +90,7 @@ func (pl *NodeAffinity) EventsToRegister(_ context.Context) ([]framework.Cluster
 	// Ideally, it's supposed to register only Add | UpdateNodeLabel because UpdateNodeTaint will never change the result from this plugin.
 	// But, we may miss Node/Add event due to preCheck, and we decided to register UpdateNodeTaint | UpdateNodeLabel for all plugins registering Node/Add.
 	// See: https://github.com/kubernetes/kubernetes/issues/109437
+  print("GWX: EventsToRegister - node add/update Fn: pl.isSchedulableAfterNodeChange  ")
 	nodeActionType := framework.Add | framework.UpdateNodeLabel | framework.UpdateNodeTaint
 	if pl.enableSchedulingQueueHint {
 		// preCheck is not used when QHint is enabled, and hence we can use UpdateNodeLabel instead of Update.
@@ -105,12 +106,14 @@ func (pl *NodeAffinity) EventsToRegister(_ context.Context) ([]framework.Cluster
 // that change made a previously unschedulable pod schedulable.
 func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1.Pod, oldObj, newObj interface{}) (framework.QueueingHint, error) {
 	originalNode, modifiedNode, err := util.As[*v1.Node](oldObj, newObj)
+  logger.V(4).Info("GWX: entering isSchedulableAfterNodeChange.")
+
 	if err != nil {
 		return framework.Queue, err
 	}
 
 	if pl.addedNodeSelector != nil && !pl.addedNodeSelector.Match(modifiedNode) {
-		logger.V(4).Info("added or modified node didn't match scheduler-enforced node affinity and this event won't make the Pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+		logger.V(4).Info("GWX: framework.QueueSkip. added or modified node didn't match scheduler-enforced node affinity and this event won't make the Pod schedulable", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.QueueSkip, nil
 	}
 
@@ -120,12 +123,12 @@ func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1
 		return framework.Queue, err
 	}
 	if !isMatched {
-		logger.V(5).Info("node was created or updated, but the pod's NodeAffinity doesn't match", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+		logger.V(5).Info("GWX: framework.QueueSkip. node was created or updated, but the pod's NodeAffinity doesn't match", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.QueueSkip, nil
 	}
 	// Since the node was added and it matches the pod's affinity criteria, we can unblock it.
 	if originalNode == nil {
-		logger.V(5).Info("node was created, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+		logger.V(5).Info("GWX: framework.Queue. node was created, and matches with the pod's NodeAffinity", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.Queue, nil
 	}
 	// At this point we know the operation is update so we can narrow down the criteria to unmatch -> match changes only
@@ -135,10 +138,10 @@ func (pl *NodeAffinity) isSchedulableAfterNodeChange(logger klog.Logger, pod *v1
 		return framework.Queue, err
 	}
 	if wasMatched {
-		logger.V(5).Info("node updated, but the pod's NodeAffinity hasn't changed", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+		logger.V(5).Info("GWX: framework.QueueSkip. node updated, but the pod's NodeAffinity hasn't changed", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 		return framework.QueueSkip, nil
 	}
-	logger.V(5).Info("node was updated and the pod's NodeAffinity changed to matched", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
+	logger.V(5).Info("GWX: framework.Queue. node was updated and the pod's NodeAffinity changed to matched", "pod", klog.KObj(pod), "node", klog.KObj(modifiedNode))
 	return framework.Queue, nil
 }
 
